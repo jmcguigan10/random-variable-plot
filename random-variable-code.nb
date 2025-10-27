@@ -1,0 +1,80 @@
+ClearAll[data]
+(*Define the function to generate and process the data*)
+barplot[data_, color_, plotlabel_, xlabel_, ylabel_] := 
+ Module[{cleandata, datawz, ranged},
+  ranged = Range[Min[data[[All, 1]]], Max[data[[All, 1]]]];
+  datawz = 
+   SortBy[Table[{n, 
+      Replace[Cases[data, {n, freq_} :> freq], {} -> {0}]}, {n, 
+      ranged}], First];
+  cleandata = {#1, First@Flatten@#2} & @@@ datawz;
+  BarChart[cleandata[[All, 2]],
+   ChartStyle -> color,
+   ChartLabels -> 
+    Placed[Table[
+      If[Mod[i, 10] == 1, cleandata[[i, 1]], ""], {i, 
+       Length[cleandata[[All, 1]]]}], Below],
+   AxesLabel -> {xlabel, ylabel},
+   PlotLabel -> Style[plotlabel, Bold],
+   PlotRange -> All]]
+
+RandomSampleGraph[n_] := 
+ Module[{vectors, cumulativeSums, sortedMatrix, a, b, c, adjustedA, 
+   adjustedB, adjustedC, combined},
+  vectors = 
+   Table[RandomSample[{1, 2, 3}], {n}];(*Generate n random vectors*)
+  cumulativeSums = 
+   Accumulate[vectors];(*Compute cumulative sums for each column*)
+  sortedMatrix = 
+   Map[Sort, 
+    cumulativeSums];(*Sort each row of the cumulative sums matrix*)
+  (*Extract columns*)
+  a = sortedMatrix[[All, 1]];
+  b = sortedMatrix[[All, 2]];
+  c = sortedMatrix[[All, 3]];
+  (*Adjust values by subtracting 2n from each element*)
+  adjustedA = Table[a[[i]] - 2 i, {i, n}];
+  adjustedB = Table[b[[i]] - 2 i, {i, n}];
+  adjustedC = Table[c[[i]] - 2 i, {i, n}];
+  {adjustedA, adjustedB, adjustedC}]
+VarAbc[n_] := Module[{CompleteAbc, Var},
+  CompleteAbc = 
+   Map[Sort, Accumulate[Table[RandomSample[{1, 2, 3}], {n}]]];
+  Var = Table[FinalAbc[[i, j]] - 2*i, {j, 1, 3}, {i, 1, n}]]
+
+(*Generate multiple plots and stack them with consistent y-axis \
+limits*)
+GenerateStackedPlots[numPlots_, n_] := 
+ Module[{data, lineplots, finalA, finalB, finalC, freqA, freqB, freqC,
+    barplots, meanA, sumA, meanB, FinalAbc},
+  data = 
+   Table[RandomSampleGraph[
+     n], {numPlots}];(*Generate data for all plots*)
+  finalA = Table[Last[data[[i, 1]]], {i, numPlots}];
+  finalB = Table[Last[data[[i, 2]]], {i, numPlots}];
+  finalC = Table[Last[data[[i, 3]]], {i, numPlots}];
+  freqA = SortBy[Tally[finalA], First];
+  freqB = SortBy[Tally[finalB], First];
+  freqC = SortBy[Tally[finalC], First];
+  barplots = {barplot[freqA, Red, "A Sum Final Freqeuncies", 
+     "Frequency", "A Sum"],
+    barplot[freqB, Blue, "B Sum Final Freqeuncies", "Frequency", 
+     "B Sum"],
+    barplot[freqC, Green, "C Sum Final Freqeuncies", "Frequency", 
+     "C Sum"]};
+  sumA = Sum[freqA[[i, 1]]*freqA[[i, 2]], {i, 1, Length[freqA]}];
+  meanA = sumA/numPlots; 
+  meanB = 
+   Sum[freqB[[i, 1]]*freqB[[i, 2]], {i, 1, Length[freqB]}]/numPlots;
+  lineplots = Table[ListLinePlot[data[[i]],
+     PlotStyle -> {Directive[RGBColor[1, 0, 0], Opacity[0.1]], 
+       Directive[RGBColor[0, 0, 1], Opacity[0.1]], 
+       Directive[RGBColor[0, 1, 0], Opacity[0.1]]},
+     AxesLabel -> {"n", "Value"},
+     GridLines -> Automatic,
+     ImageSize -> 600],
+    {i, numPlots}];
+  {meanB, barplots, freqA, finalA, data, lineplots}]
+{meanB, barplots, freqA, finalA, data, lineplots} = 
+  GenerateStackedPlots[200, 700];
+Show[lineplots, PlotRange -> All]
